@@ -1,13 +1,13 @@
-
 "use client";
 
 import { useState } from "react";
 import { Mail, X, Eye, EyeOff } from "lucide-react";
 import {useNavigate} from "react-router-dom"
+import axios from 'axios';
 
+const API_BASE_URL = 'http://localhost:5000/api/auth'; // Adjust this URL to your backend endpoint
 
-
-export default function LoginPage ()  {
+export default function LoginPage ()  {
   const [activeTab, setActiveTab] = useState("signup");
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
@@ -19,6 +19,7 @@ export default function LoginPage ()  {
   });
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+  const [formError, setFormError] = useState(null); // New state for form-wide errors
   const navigate = useNavigate()
 
   const handleInputChange = (field, value) => {
@@ -28,10 +29,7 @@ export default function LoginPage ()  {
       setErrors((prev) => ({ ...prev, [field]: "" }));
     }
   };
-  const handleSignUp = ()=>{
-    console.log("Signed in OR logged")
-  }
-
+  
   const validateForm = () => {
     const newErrors = {};
 
@@ -61,42 +59,41 @@ export default function LoginPage ()  {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setFormError(null);
 
     if (!validateForm()) return;
 
     setIsLoading(true);
 
-    // Simulate API call and successful login
-    setTimeout(() => {
+    try {
+      const endpoint = activeTab === "signup" ? `${API_BASE_URL}/signup` : `${API_BASE_URL}/signin`;
+      const response = await axios.post(endpoint, formData);
+
+      // Assuming a successful response includes user data or a token
+      if (response.status === 200 || response.status === 201) {
+        // Store user info (e.g., token, user details) in localStorage
+        localStorage.setItem("user", JSON.stringify(response.data));
+        navigate("/dashboard"); // Use react-router-dom for navigation
+      }
+    } catch (err) {
+      console.error("API call failed:", err.response ? err.response.data : err.message);
+      setFormError(
+        err.response?.data?.message || "An unexpected error occurred. Please try again."
+      );
+    } finally {
       setIsLoading(false);
-      // Store user info in localStorage for demo
-      const userData = {
-        name: formData.firstName || "User",
-        email: formData.email,
-        isLoggedIn: true,
-      };
-      localStorage.setItem("user", JSON.stringify(userData));
-      // Navigate to landing page
-      window.location.href = "/";
-    }, 2000);
+    }
   };
 
-  const handleSocialLogin = (provider) => {
-    // Simulate social login
-    const userData = {
-      name: "John Doe",
-      email: "john@example.com",
-      isLoggedIn: true,
-    };
-    localStorage.setItem("user", JSON.stringify(userData));
-    window.location.href = "/";
+  const handleSocialLogin = async (provider) => {
+    // This part would be more complex in a real app,
+    // involving redirects to the social provider's auth page.
+    // For now, it will use the same form error state for simplicity.
+    setFormError(
+        `Social login with ${provider} is not currently implemented. Please use the form.`
+    );
   };
-
-  const handleLanding = () =>{
-    navigate("/")
-   
-  }
- 
+  
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
       {/* Cosmic Background */}
@@ -146,7 +143,7 @@ export default function LoginPage ()  {
           {/* Close Button */}
           <button
             className="absolute top-6 right-6 w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-all duration-200"
-            onClick={() => (window.location.href = "/")}
+            onClick={() => navigate("/")}
           >
             <X size={16} className="text-white/80" />
           </button>
@@ -184,13 +181,20 @@ export default function LoginPage ()  {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Display form-wide errors */}
+            {formError && (
+              <p className="text-red-400 text-sm font-semibold text-center mt-2">
+                {formError}
+              </p>
+            )}
+
             {/* Name Fields (Sign up only) */}
             {activeTab === "signup" && (
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <input
                     type="text"
-                    placeholder="John"
+                    placeholder="First name"
                     value={formData.firstName}
                     onChange={(e) =>
                       handleInputChange("firstName", e.target.value)
@@ -321,7 +325,6 @@ export default function LoginPage ()  {
             <button
               type="submit"
               disabled={isLoading}
-              onClick={()=>handleLanding()}
               className="w-full py-3 bg-white/90 hover:bg-white text-black font-bold rounded-xl transition-all duration-200 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed mt-6"
             >
               {isLoading ? (
@@ -400,3 +403,4 @@ export default function LoginPage ()  {
     </div>
   );
 }
+
