@@ -1,21 +1,40 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 
-export default function DashboardSection() {
-  const initialProducts = [
-    { id: 1, name: '4G SIM Pack', category: 'SIM', price: 99, monthlySales: [120, 130, 140, 160, 180, 200], stock: 1200 },
-    { id: 2, name: '5G SIM Pack', category: 'SIM', price: 199, monthlySales: [30, 50, 80, 110, 150, 190], stock: 800 },
-    { id: 3, name: 'Fiber Broadband 100Mbps', category: 'Broadband', price: 799, monthlySales: [45, 50, 60, 65, 70, 82], stock: 420 },
-    { id: 4, name: 'Fiber Broadband 300Mbps', category: 'Broadband', price: 1299, monthlySales: [12, 20, 30, 45, 60, 70], stock: 200 },
-    { id: 5, name: 'Prepaid Data Topup 1GB', category: 'Topup', price: 49, monthlySales: [400, 380, 360, 420, 450, 500], stock: 5000 },
-    { id: 6, name: 'IoT Device Plan', category: 'IoT', price: 499, monthlySales: [5, 8, 9, 10, 15, 18], stock: 150 },
-  ];
-
-  const [products] = useState(initialProducts);
+export default function Dashboard() {
+  const [products, setProducts] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('All');
   const [months] = useState(['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep']);
 
+  // Fetch data from the backend API when the component mounts
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // This is the API endpoint your backend should provide
+        const response = await fetch('/api/dashboard/products');
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        const data = await response.json();
+        setProducts(data);
+        setError(null);
+      } catch (e) {
+        setError('Failed to fetch data.');
+        console.error('Fetch error:', e);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
   const totals = useMemo(() => {
+    if (!products || products.length === 0) {
+      return { totalRevenue: 0, totalUnits: 0, growthRate: 0, lastRevenue: 0, prevRevenue: 0 };
+    }
     const totalRevenue = products.reduce((s, p) => s + p.price * p.monthlySales.reduce((a, b) => a + b, 0), 0);
     const totalUnits = products.reduce((s, p) => s + p.monthlySales.reduce((a, b) => a + b, 0), 0);
     const lastIdx = products[0].monthlySales.length - 1;
@@ -37,6 +56,7 @@ export default function DashboardSection() {
 
   function Sparkline({ data }) {
     const w = 160, h = 40, pad = 4;
+    if (data.length < 2) return null;
     const max = Math.max(...data);
     const points = data.map((v, i) => {
       const x = pad + (i * (w - 2 * pad) / (data.length - 1));
@@ -51,6 +71,22 @@ export default function DashboardSection() {
   }
 
   const lastMonthSales = products.map(p => ({ name: p.name, value: p.monthlySales[p.monthlySales.length - 1] }));
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-[#121212] text-gray-400">
+        Loading data...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-[#121212] text-red-400">
+        {error}
+      </div>
+    );
+  }
 
   return (
     <div className="bg-[#121212] text-[#e0e0e0] font-sans leading-relaxed min-h-screen">
@@ -98,6 +134,8 @@ export default function DashboardSection() {
             <div className="text-gray-400 text-sm">Monthly units sold (sample line)</div>
             <div className="mt-2">
               {(() => {
+                // Ensure products data is available and has monthlySales before rendering
+                if (!products[0]?.monthlySales) return null;
                 const len = products[0].monthlySales.length;
                 const agg = Array.from({ length: len }, (_, i) => products.reduce((s, p) => s + p.monthlySales[i], 0));
                 const max = Math.max(...agg);
