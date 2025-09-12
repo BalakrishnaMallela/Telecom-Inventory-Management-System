@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import axios from "axios";
+
+// This is a placeholder for your backend API URL.
+// Replace it with your actual endpoint. For a local JSON server, it might be something like "http://localhost:3000/products".
+const BASE_URL = "https://your-api-endpoint.com/products";
 
 export default function App() {
-  const [products, setProducts] = useState([
-    { id: 1, name: "Router", category: "Networking", stockLevel: 10, reorderPoint: 5 },
-    { id: 2, name: "Switch", category: "Networking", stockLevel: 3, reorderPoint: 5 },
-  ]);
-
+  const [products, setProducts] = useState([]);
   const [currentPage, setCurrentPage] = useState("list");
   const [editingProductId, setEditingProductId] = useState(null);
 
@@ -15,34 +16,54 @@ export default function App() {
     const [transactionType, setTransactionType] = useState(null);
     const [quantity, setQuantity] = useState("");
 
-    const handleDelete = (id) => {
-      // For this example, a simple filter is used.
-      // A more robust app would use a custom modal for confirmation.
-      setProducts(products.filter((p) => p.id !== id));
+    // Fetch products from the API on component mount
+    useEffect(() => {
+      fetchProducts();
+    }, []);
+
+    const fetchProducts = async () => {
+      try {
+        const response = await axios.get(BASE_URL);
+        setProducts(response.data);
+      } catch (error) {
+        console.error("Error fetching products:", error);
+      }
     };
 
-    const handleTransaction = () => {
+    const handleDelete = async (id) => {
+      try {
+        // Send a DELETE request to the API
+        await axios.delete(`${BASE_URL}/${id}`);
+        // Re-fetch the updated list
+        fetchProducts();
+      } catch (error) {
+        console.error("Error deleting product:", error);
+      }
+    };
+
+    const handleTransaction = async () => {
       const qty = Number(quantity);
       if (qty <= 0) {
         console.error("Quantity must be greater than 0");
         return;
       }
-      setProducts(
-        products.map((p) =>
-          p.id === selectedProduct.id
-            ? {
-                ...p,
-                stockLevel:
-                  transactionType === "in"
-                    ? p.stockLevel + qty
-                    : Math.max(0, p.stockLevel - qty),
-              }
-            : p
-        )
-      );
-      setSelectedProduct(null);
-      setTransactionType(null);
-      setQuantity("");
+    
+      const updatedStockLevel = transactionType === "in"
+        ? selectedProduct.stockLevel + qty
+        : Math.max(0, selectedProduct.stockLevel - qty);
+    
+      try {
+        // Send a PATCH request to update the stock level
+        await axios.patch(`${BASE_URL}/${selectedProduct.id}`, { stockLevel: updatedStockLevel });
+        // Re-fetch the updated list
+        fetchProducts();
+        // Reset the form
+        setSelectedProduct(null);
+        setTransactionType(null);
+        setQuantity("");
+      } catch (error) {
+        console.error("Error updating stock:", error);
+      }
     };
 
     return (
@@ -136,7 +157,9 @@ export default function App() {
                 className="w-full p-2 mt-3 mb-4 rounded-md border border-gray-600 bg-slate-900 text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <div className="flex justify-between space-x-2">
-                <button className="bg-blue-600 text-white py-2 px-4 rounded-md font-semibold hover:bg-blue-700 transition-colors duration-200" onClick={handleTransaction}>Confirm</button>
+                <button className="bg-blue-600 text-white py-2 px-4 rounded-md font-semibold hover:bg-blue-700 transition-colors duration-200" onClick={handleTransaction}>
+                  Confirm
+                </button>
                 <button className="bg-red-600 text-white py-2 px-4 rounded-md font-semibold hover:bg-red-700 transition-colors duration-200" onClick={() => { setSelectedProduct(null); setTransactionType(null); }}>
                   Cancel
                 </button>
@@ -157,15 +180,22 @@ export default function App() {
       existingProduct || { name: "", category: "", stockLevel: 0, reorderPoint: 0 }
     );
   
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
       e.preventDefault();
-      if (isEditMode) {
-        setProducts(products.map((p) => (p.id === editingProductId ? formData : p)));
-      } else {
-        setProducts([...products, { ...formData, id: Date.now() }]);
+      try {
+        if (isEditMode) {
+          // Send a PUT request to update the existing product
+          await axios.put(`${BASE_URL}/${editingProductId}`, formData);
+        } else {
+          // Send a POST request to add a new product
+          await axios.post(BASE_URL, formData);
+        }
+        // Return to the list page and reset the editing state
+        setCurrentPage("list");
+        setEditingProductId(null);
+      } catch (error) {
+        console.error("Error saving product:", error);
       }
-      setCurrentPage("list");
-      setEditingProductId(null);
     };
 
     return (
