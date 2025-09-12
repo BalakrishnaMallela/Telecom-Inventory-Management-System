@@ -1,19 +1,33 @@
-import { useState } from "react";
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import { Search, Plus, Edit3, Trash2, Phone, Mail, MapPin, Package, Clock, X } from 'lucide-react';
 
+const API_URL = 'http://localhost:5000/api/suppliers';
+
 export default function App() {
-  const [suppliers, setSuppliers] = useState([
-    { id: 1, name: 'TechCorp Solutions', contactPerson: 'John Smith', email: 'john@techcorp.com', phone: '+1-555-0101', address: '123 Tech Street, Silicon Valley, CA', category: 'Network Equipment', status: 'Active', totalOrders: 45, pendingOrders: 2, lastOrderDate: '2024-01-15', rating: 4.5 },
-    { id: 2, name: 'Fiber Optics Inc', contactPerson: 'Sarah Johnson', email: 'sarah@fiberoptics.com', phone: '+1-555-0102', address: '456 Cable Ave, Denver, CO', category: 'Fiber Cables', status: 'Active', totalOrders: 32, pendingOrders: 0, lastOrderDate: '2024-01-10', rating: 4.8 },
-    { id: 3, name: 'Mobile Parts Warehouse', contactPerson: 'Mike Wilson', email: 'mike@mobileparts.com', phone: '+1-555-0103', address: '789 Mobile Blvd, Austin, TX', category: 'Mobile Equipment', status: 'Inactive', totalOrders: 18, pendingOrders: 1, lastOrderDate: '2023-12-20', rating: 3.9 },
-    { id: 4, name: 'Satellite Systems Ltd', contactPerson: 'Lisa Brown', email: 'lisa@satellitesys.com', phone: '+1-555-0104', address: '321 Orbit Lane, Houston, TX', category: 'Satellite Equipment', status: 'Active', totalOrders: 28, pendingOrders: 3, lastOrderDate: '2024-01-12', rating: 4.2 }
-  ]);
-  
+  const [suppliers, setSuppliers] = useState([]);
   const [currentPage, setCurrentPage] = useState("suppliers");
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('All');
   const [filterCategory, setFilterCategory] = useState('All');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
+  // Fetch suppliers from the backend on component mount
+  useEffect(() => {
+    const fetchSuppliers = async () => {
+      try {
+        const response = await axios.get(API_URL);
+        setSuppliers(response.data);
+        setLoading(false);
+      } catch (err) {
+        setError("Failed to fetch suppliers. Please check the backend connection.");
+        setLoading(false);
+      }
+    };
+    fetchSuppliers();
+  }, []);
+  
   const categories = [...new Set(suppliers.map(s => s.category))];
   
   const filteredSuppliers = suppliers.filter(supplier => {
@@ -28,11 +42,22 @@ export default function App() {
   
   // Suppliers Page Component
   const SuppliersPage = () => {
-    const handleDelete = (id) => {
-      // For this example, a simple filter is used.
-      // A more robust app would use a custom modal for confirmation.
-      setSuppliers(suppliers.filter(s => s.id !== id));
+    const handleDelete = async (id) => {
+      try {
+        await axios.delete(`${API_URL}/${id}`);
+        setSuppliers(suppliers.filter(s => s.id !== id));
+      } catch (err) {
+        setError("Failed to delete supplier.");
+      }
     };
+
+    if (loading) {
+      return <div className="text-center text-blue-400 text-lg p-10">Loading...</div>;
+    }
+
+    if (error) {
+      return <div className="text-center text-red-400 text-lg p-10">{error}</div>;
+    }
 
     return (
       <div className="container mx-auto p-6 bg-slate-800 text-gray-200 rounded-lg shadow-xl min-h-screen">
@@ -168,18 +193,20 @@ export default function App() {
       lastOrderDate: new Date().toISOString().slice(0, 10),
       rating: 0
     });
+    const [formError, setFormError] = useState(null);
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
       e.preventDefault();
-      const newSupplier = {
-        ...formData,
-        id: Date.now(),
-        totalOrders: Number(formData.totalOrders),
-        pendingOrders: Number(formData.pendingOrders),
-        rating: Number(formData.rating)
-      };
-      setSuppliers(prevSuppliers => [...prevSuppliers, newSupplier]);
-      setCurrentPage('suppliers');
+      setFormError(null);
+      try {
+        await axios.post(API_URL, formData);
+        // Re-fetch the data after a successful post to ensure UI is up-to-date
+        const updatedSuppliersResponse = await axios.get(API_URL);
+        setSuppliers(updatedSuppliersResponse.data);
+        setCurrentPage('suppliers');
+      } catch (err) {
+        setFormError("Failed to add supplier. Please try again.");
+      }
     };
 
     const handleChange = (e) => {
@@ -202,6 +229,7 @@ export default function App() {
           </button>
         </div>
         <form onSubmit={handleSubmit} className="bg-slate-700 p-6 rounded-lg shadow-md space-y-4">
+          {formError && <div className="text-red-400 text-sm text-center mb-4">{formError}</div>}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <label className="block">
               <span className="text-gray-400 text-sm">Supplier Name</span>
