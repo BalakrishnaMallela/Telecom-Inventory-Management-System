@@ -44,6 +44,8 @@ import { HeroSection } from "./HeroSection";
 import { FqaSection } from "./Fqa";
 import ShowCase from "./ShowCaseSection";
 import { useNavigate } from "react-router-dom";
+import axios from 'axios';
+import Pricing from "./Pricing";
 
 const Hero = () => {
   const { scrollYProgress } = useScroll();
@@ -127,11 +129,7 @@ const Hero = () => {
   };
 
   // New handleLearnMore function using navigate
-  const handleLearnMore = (title) => {
-    // Create a URL-friendly slug from the title
-    const slug = title.toLowerCase().replace(/ /g, '-');
-    navigate(`/${slug}`);
-  };
+  
 
   // NEW: handleNavigation function for the new menu items
   const handleNavigation = (path) => {
@@ -352,6 +350,10 @@ const Hero = () => {
     { icon: <Wifi className="w-6 h-6" />, name: "WiFi Access Points" },
     { icon: <Globe className="w-6 h-6" />, name: "Network Switches" },
   ];
+const handlePricing = ()=>{
+     navigate("/pricing")
+}
+
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-black">
@@ -584,7 +586,7 @@ const Hero = () => {
                                   >
                                     <X className="w-3 h-3" />
                                   </motion.button>
-                                </div>
+                              </div>
                               </motion.div>
                             ))
                           )}
@@ -695,10 +697,11 @@ const Hero = () => {
                       "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)",
                   }}
                   whileTap={{ scale: 0.95 }}
+                  onClick={handlePricing}
                   className="bg-gradient-to-r from-blue-600 to-cyan-600 text-white px-10 py-4 rounded-xl font-bold text-lg flex items-center space-x-3 transition-all duration-300"
                 >
                   <span>Start Free Trial</span>
-                  <ArrowRight className="w-5 h-5" />
+                  <ArrowRight className="w-5 h-5"   />
                 </motion.button>
 
                 <motion.button
@@ -710,7 +713,7 @@ const Hero = () => {
                 </motion.button>
               </motion.div>
             </motion.div>
-        </div>
+        </div>
         </section>
 
         {/* Stats Section */}
@@ -732,7 +735,6 @@ const Hero = () => {
                             backgroundPosition: [
                               "0% 50%",
                               "100% 50%",
-                              "0% 50%",
                             ],
                           }
                         : {}
@@ -791,7 +793,7 @@ const Hero = () => {
                   <motion.button
                     className="flex items-center text-blue-400 mt-6 font-bold"
                     whileHover={{ x: 10 }}
-                    onClick={() => handleLearnMore(feature.title)}
+                  
                   >
                     <span>Learn more</span>
                     <ArrowRight className="w-4 h-4 ml-2" />
@@ -850,6 +852,7 @@ const Hero = () => {
                     boxShadow: "0 20px 40px rgba(79, 172, 254, 0.4)",
                   }}
                   whileTap={{ scale: 0.95 }}
+                  onClick={handlePricing}
                   className="bg-gradient-to-r from-blue-600 to-cyan-600 text-white px-12 py-4 rounded-xl font-bold text-lg transition-all duration-300"
                 >
                   Start Your Free Trial
@@ -864,7 +867,7 @@ const Hero = () => {
                 </motion.button>
               </div>
             </motion.div>
-          </div>
+            </div>
         </section>
 
         {/* Existing Sections */}

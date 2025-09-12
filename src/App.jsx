@@ -14,6 +14,7 @@ import RealTimeInventory from './components/RealTimeInventory'
 import SuppliersListComponent from "./components/Supplier"
 import ProductsSection from "./components/Products"
 import DashboardSection from './components/Dashboard'
+import Pricing from './components/Pricing'
 
 function App() {
 
@@ -35,6 +36,7 @@ function App() {
        
        <Route path="/contact" element={<ContactUs/>}/>
        <Route path="/dashboards" element={<DashboardSection/>}/>
+       <Route path="/pricing" element={<Pricing/>}/>
        
       
       </Routes>
