@@ -15,6 +15,7 @@ import SuppliersListComponent from "./components/Supplier"
 import ProductsSection from "./components/Products"
 import DashboardSection from './components/Dashboard'
 import Pricing from './components/Pricing'
+import Navbar from './components/Navbar'
 
 function App() {
 
@@ -37,6 +38,7 @@ function App() {
        <Route path="/contact" element={<ContactUs/>}/>
        <Route path="/dashboards" element={<DashboardSection/>}/>
        <Route path="/pricing" element={<Pricing/>}/>
+       <Route path="/navbar" element={<Navbar/>}/>
        
       
       </Routes>
